@@ -21,13 +21,13 @@ func NewUserBalancePostgres(db *sqlx.DB, logger *log.Logger) *UserBalancePostgre
 }
 
 func (r UserBalancePostgres) GetByUserId(userId uuid.UUID) (model.UserBalance, error) {
-	query := "SELECT ab.user_id, ab.balance FROM account_balance AS ab WHERE ab.user_id = $1"
+	query := "SELECT ab.user_id, ab.balance FROM user_balance AS ab WHERE ab.user_id = $1"
 
 	var UserBalance model.UserBalance
 
 	err := r.db.Get(&UserBalance, query, userId)
 	if err != nil {
-		r.logger.Printf("error in db while trying to get account balance of user %v, error: %s",
+		r.logger.Printf("error in db while trying to get user balance of user %v, error: %s",
 			userId, userId)
 		return model.UserBalance{}, err
 	}
@@ -36,19 +36,19 @@ func (r UserBalancePostgres) GetByUserId(userId uuid.UUID) (model.UserBalance, e
 }
 
 func (r UserBalancePostgres) UpdateByUserId(userId uuid.UUID, changeAmount float64) error {
-	query := "UPDATE account_balance ab SET balance = balance + $1 WHERE user_id = $2"
+	query := "UPDATE user_balance ab SET balance = balance + $1 WHERE user_id = $2"
 	_, err := r.db.Exec(query, changeAmount, userId)
 	return err
 }
 
 func (r UserBalancePostgres) CheckIfExistsByUserId(userId uuid.UUID) (bool, error) {
-	query := "SELECT ab.user_id, ab.balance FROM account_balance AS ab WHERE ab.user_id = $1"
+	query := "SELECT ab.user_id, ab.balance FROM user_balance AS ab WHERE ab.user_id = $1"
 
 	var UserBalance model.UserBalance
 
 	err := r.db.Get(&UserBalance, query, userId)
 	if err == sql.ErrNoRows {
-		r.logger.Printf("could not find account balance of user %v in db",
+		r.logger.Printf("could not find user balance of user %v in db",
 			userId)
 		return false, nil
 	} else if err != nil {
@@ -61,14 +61,14 @@ func (r UserBalancePostgres) CheckIfExistsByUserId(userId uuid.UUID) (bool, erro
 }
 
 func (r UserBalancePostgres) Create(UserBalance model.UserBalance) error {
-	query := "INSERT INTO account_balance AS ab (user_id, balance) VALUES ($1, $2) RETURNING user_id"
+	query := "INSERT INTO user_balance AS ab (user_id, balance) VALUES ($1, $2) RETURNING user_id"
 
 	var userId uuid.UUID
 
 	row := r.db.QueryRow(query, UserBalance.UserId, UserBalance.Balance)
 
 	if err := row.Scan(&userId); err != nil {
-		r.logger.Printf("error in db while trying to create account balance info of user %v, error: %s",
+		r.logger.Printf("error in db while trying to create user balance info of user %v, error: %s",
 			userId, err.Error())
 		return err
 	}

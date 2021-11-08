@@ -27,7 +27,7 @@ func main() {
 	}
 	defer database.ClosePostgresDB(db)
 
-	repos := repository.NewRepository(db, logger)
+	repos := repository.NewRepositories(db, logger)
 
 	fmt.Println(repos)
 }

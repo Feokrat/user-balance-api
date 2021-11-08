@@ -12,14 +12,14 @@ type UserBalance interface {
 	GetByUserId(userId uuid.UUID) (model.UserBalance, error)
 	UpdateByUserId(userId uuid.UUID, changeAmount float64) error
 	CheckIfExistsByUserId(userId uuid.UUID) (bool, error)
-	Create(accountBalance model.UserBalance) error
+	Create(userBalance model.UserBalance) error
 }
 
 type Repository struct {
 	UserBalance
 }
 
-func NewRepository(db *sqlx.DB, logger *log.Logger) *Repository {
+func NewRepositories(db *sqlx.DB, logger *log.Logger) *Repository {
 	return &Repository{
 		UserBalance: NewUserBalancePostgres(db, logger),
 	}
