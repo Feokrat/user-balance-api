@@ -33,27 +33,27 @@ func NewUserBalanceService(userBalanceRepo repository.UserBalance, logger *log.L
 }
 
 func (s UserBalanceService) GetBalanceByUserId(userId uuid.UUID) (float64, error) {
-	abExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
+	ubExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
 	if err != nil {
 		s.logger.Printf("could not check if user with id %v exists, error: %s",
 			userId, err.Error())
 		return 0, err
 	}
 
-	if !abExists {
+	if !ubExists {
 		s.logger.Printf("user with id %v does not exist",
 			userId)
 		return 0, nil
 	}
 
-	ab, err := s.userBalanceRepo.GetByUserId(userId)
+	ub, err := s.userBalanceRepo.GetByUserId(userId)
 	if err != nil {
 		s.logger.Printf("could not get user balance info of user with id %v, error: %s",
 			userId, err.Error())
 		return 0, err
 	}
 
-	return ab.Balance, nil
+	return ub.Balance, nil
 }
 
 func (s UserBalanceService) ChangeUserBalanceByUserId(userId uuid.UUID, changeAmount float64) (bool, error) {
@@ -61,13 +61,13 @@ func (s UserBalanceService) ChangeUserBalanceByUserId(userId uuid.UUID, changeAm
 		s.logger.Printf("trying to add balance to user %v",
 			userId)
 
-		abExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
+		ubExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
 		if err != nil {
 			s.logger.Printf("could not check if user %v exists to add his balance, error: %s",
 				userId, err.Error())
 			return false, err
 		}
-		if !abExists {
+		if !ubExists {
 			s.logger.Printf("user %v does not exist, trying to create him with balance %v",
 				userId, changeAmount)
 
@@ -87,14 +87,14 @@ func (s UserBalanceService) ChangeUserBalanceByUserId(userId uuid.UUID, changeAm
 		s.logger.Printf("trying to sub balance of user %v",
 			userId)
 
-		abExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
+		ubExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
 		if err != nil {
 			s.logger.Printf("could not check if user %v exists, error: %s",
 				userId, err.Error())
 			return false, err
 		}
 
-		if !abExists {
+		if !ubExists {
 			s.logger.Printf("user %v does not exist to sub his balance",
 				userId)
 			return false, schemas.ErrorUserBalanceNotFound{
@@ -208,11 +208,11 @@ func (s UserBalanceService) addBalance(userId uuid.UUID, changeAmount float64) e
 }
 
 func (s UserBalanceService) subBalance(userId uuid.UUID, changeAmount float64) error {
-	ab, err := s.userBalanceRepo.GetByUserId(userId)
+	ub, err := s.userBalanceRepo.GetByUserId(userId)
 	if err != nil {
 		return err
 	}
-	if math.Abs(changeAmount) > ab.Balance {
+	if math.Abs(changeAmount) > ub.Balance {
 		s.logger.Printf("Not enough funds in user %v balance", userId)
 		return schemas.ErrorNotEnoughFunds{
 			Message: fmt.Sprintf("User %v has less money than %v",

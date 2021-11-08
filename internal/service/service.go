@@ -14,12 +14,12 @@ type UserBalance interface {
 	GetExchangeRate(fromCurrency string, toCurrency string) (float64, error)
 }
 
-type Service struct {
+type Services struct {
 	UserBalance
 }
 
-func NewServices(repos *repository.Repository, logger *log.Logger) *Service {
-	return &Service{
+func NewServices(repos *repository.Repository, logger *log.Logger) *Services {
+	return &Services{
 		UserBalance: NewUserBalanceService(repos.UserBalance, logger),
 	}
 }

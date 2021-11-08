@@ -21,7 +21,7 @@ func NewUserBalancePostgres(db *sqlx.DB, logger *log.Logger) *UserBalancePostgre
 }
 
 func (r UserBalancePostgres) GetByUserId(userId uuid.UUID) (model.UserBalance, error) {
-	query := "SELECT ab.user_id, ab.balance FROM user_balance AS ab WHERE ab.user_id = $1"
+	query := "SELECT ub.user_id, ub.balance FROM user_balance AS ub WHERE ub.user_id = $1"
 
 	var UserBalance model.UserBalance
 
@@ -36,13 +36,13 @@ func (r UserBalancePostgres) GetByUserId(userId uuid.UUID) (model.UserBalance, e
 }
 
 func (r UserBalancePostgres) UpdateByUserId(userId uuid.UUID, changeAmount float64) error {
-	query := "UPDATE user_balance ab SET balance = balance + $1 WHERE user_id = $2"
+	query := "UPDATE user_balance ub SET balance = balance + $1 WHERE user_id = $2"
 	_, err := r.db.Exec(query, changeAmount, userId)
 	return err
 }
 
 func (r UserBalancePostgres) CheckIfExistsByUserId(userId uuid.UUID) (bool, error) {
-	query := "SELECT ab.user_id, ab.balance FROM user_balance AS ab WHERE ab.user_id = $1"
+	query := "SELECT ub.user_id, ub.balance FROM user_balance AS ub WHERE ub.user_id = $1"
 
 	var UserBalance model.UserBalance
 
@@ -61,7 +61,7 @@ func (r UserBalancePostgres) CheckIfExistsByUserId(userId uuid.UUID) (bool, erro
 }
 
 func (r UserBalancePostgres) Create(UserBalance model.UserBalance) error {
-	query := "INSERT INTO user_balance AS ab (user_id, balance) VALUES ($1, $2) RETURNING user_id"
+	query := "INSERT INTO user_balance AS ub (user_id, balance) VALUES ($1, $2) RETURNING user_id"
 
 	var userId uuid.UUID
 
