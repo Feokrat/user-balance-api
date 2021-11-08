@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/Feokrat/user-balance-api/internal/database"
+
 	"github.com/Feokrat/user-balance-api/internal/config"
 )
 
@@ -17,5 +19,8 @@ func main() {
 		logger.Fatalf("failed to load application configuration: %s", err)
 	}
 
-	fmt.Println(cfg)
-}
+	db, err := database.NewPostgresDB(cfg.Postgresql, logger)
+	if err != nil {
+		logger.Fatalf("error with database: %s", err)
+	}
+	defer database.ClosePostgresDB(db)
