@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/Feokrat/user-balance-api/internal/repository"
+
 	"github.com/Feokrat/user-balance-api/internal/database"
 
 	"github.com/Feokrat/user-balance-api/internal/config"
@@ -24,3 +26,8 @@ func main() {
 		logger.Fatalf("error with database: %s", err)
 	}
 	defer database.ClosePostgresDB(db)
+
+	repos := repository.NewRepository(db, logger)
+
+	fmt.Println(repos)
+}

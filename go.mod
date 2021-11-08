@@ -3,6 +3,7 @@ module github.com/Feokrat/user-balance-api
 go 1.17
 
 require (
+	github.com/google/uuid v1.1.2
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.2.0
 	github.com/mitchellh/mapstructure v1.4.2
