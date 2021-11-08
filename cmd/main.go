@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/Feokrat/user-balance-api/internal/service"
+
 	"github.com/Feokrat/user-balance-api/internal/repository"
 
 	"github.com/Feokrat/user-balance-api/internal/database"
@@ -28,6 +30,7 @@ func main() {
 	defer database.ClosePostgresDB(db)
 
 	repos := repository.NewRepositories(db, logger)
+	services := service.NewServices(repos, logger)
 
-	fmt.Println(repos)
+	fmt.Println(services)
 }
