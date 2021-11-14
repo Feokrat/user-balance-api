@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"time"
 
 	"github.com/Feokrat/user-balance-api/internal/schemas"
 
@@ -24,12 +25,14 @@ const (
 )
 
 type UserBalanceService struct {
-	userBalanceRepo repository.UserBalance
-	logger          *log.Logger
+	userBalanceRepo    repository.UserBalance
+	transactionLogRepo repository.TransactionLog
+	logger             *log.Logger
 }
 
-func NewUserBalanceService(userBalanceRepo repository.UserBalance, logger *log.Logger) *UserBalanceService {
-	return &UserBalanceService{userBalanceRepo: userBalanceRepo, logger: logger}
+func NewUserBalanceService(userBalanceRepo repository.UserBalance, transactionLogRepo repository.TransactionLog,
+	logger *log.Logger) *UserBalanceService {
+	return &UserBalanceService{userBalanceRepo: userBalanceRepo, transactionLogRepo: transactionLogRepo, logger: logger}
 }
 
 func (s UserBalanceService) GetBalanceByUserId(userId uuid.UUID) (float64, error) {
@@ -57,16 +60,17 @@ func (s UserBalanceService) GetBalanceByUserId(userId uuid.UUID) (float64, error
 }
 
 func (s UserBalanceService) ChangeUserBalanceByUserId(userId uuid.UUID, changeAmount float64) (bool, error) {
+	ubExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
+	if err != nil {
+		s.logger.Printf("could not check if user %v exists, error: %s",
+			userId, err.Error())
+		return false, err
+	}
+
 	if changeAmount > 0 {
 		s.logger.Printf("trying to add balance to user %v",
 			userId)
 
-		ubExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
-		if err != nil {
-			s.logger.Printf("could not check if user %v exists to add his balance, error: %s",
-				userId, err.Error())
-			return false, err
-		}
 		if !ubExists {
 			s.logger.Printf("user %v does not exist, trying to create him with balance %v",
 				userId, changeAmount)
@@ -80,19 +84,30 @@ func (s UserBalanceService) ChangeUserBalanceByUserId(userId uuid.UUID, changeAm
 					userId, changeAmount)
 				return false, err
 			}
+
+			err = s.logBalanceInfo(userId, changeAmount, fmt.Sprintf("Added %v rubles",
+				changeAmount))
+			if err != nil {
+				s.logger.Printf("could not log info about user %v, error: %s",
+					userId, err.Error())
+				return false, err
+			}
+
 			return true, nil
+		} else {
+			err = s.logBalanceInfo(userId, changeAmount, fmt.Sprintf("Added %v rubles",
+				changeAmount))
+			if err != nil {
+				s.logger.Printf("could not log info about user %v, error: %s",
+					userId, err.Error())
+				return false, err
+			}
+
+			return false, s.addBalance(userId, changeAmount)
 		}
-		return false, s.addBalance(userId, changeAmount)
 	} else {
 		s.logger.Printf("trying to sub balance of user %v",
 			userId)
-
-		ubExists, err := s.userBalanceRepo.CheckIfExistsByUserId(userId)
-		if err != nil {
-			s.logger.Printf("could not check if user %v exists, error: %s",
-				userId, err.Error())
-			return false, err
-		}
 
 		if !ubExists {
 			s.logger.Printf("user %v does not exist to sub his balance",
@@ -101,9 +116,17 @@ func (s UserBalanceService) ChangeUserBalanceByUserId(userId uuid.UUID, changeAm
 				Message: fmt.Sprintf("user balance of user with id %v not found",
 					userId),
 			}
-		}
+		} else {
+			err = s.logBalanceInfo(userId, changeAmount, fmt.Sprintf("Substracted %v rubles",
+				math.Abs(changeAmount)))
+			if err != nil {
+				s.logger.Printf("could not log info about user %v, error: %s",
+					userId, err.Error())
+				return false, err
+			}
 
-		return false, s.subBalance(userId, changeAmount)
+			return false, s.subBalance(userId, changeAmount)
+		}
 	}
 }
 
@@ -132,7 +155,7 @@ func (s UserBalanceService) ApplyTransaction(senderId uuid.UUID, receiverId uuid
 	}
 
 	if !receiverAbExists {
-		s.logger.Printf("reseiver %v does not exist to add to his balance",
+		s.logger.Printf("receiver %v does not exist to add to his balance",
 			senderId)
 		return schemas.ErrorUserBalanceNotFound{
 			Message: fmt.Sprintf("user balance of receiver %v not found",
@@ -147,6 +170,14 @@ func (s UserBalanceService) ApplyTransaction(senderId uuid.UUID, receiverId uuid
 		return err
 	}
 
+	err = s.logBalanceInfo(senderId, amount, fmt.Sprintf("Sended %v rubles to user %v",
+		amount, receiverId))
+	if err != nil {
+		s.logger.Printf("could not log info about user %v, error: %s",
+			senderId, err.Error())
+		return err
+	}
+
 	err = s.addBalance(receiverId, amount)
 	if err != nil {
 		s.logger.Printf("could not send money to user %v, trying to return money to user %v, error: %v",
@@ -156,6 +187,14 @@ func (s UserBalanceService) ApplyTransaction(senderId uuid.UUID, receiverId uuid
 			s.logger.Printf("could not return money to user %v, error: %s",
 				senderId, err.Error())
 		}
+		return err
+	}
+
+	err = s.logBalanceInfo(receiverId, amount, fmt.Sprintf("Received %v rubles from user %v",
+		amount, senderId))
+	if err != nil {
+		s.logger.Printf("could not log info about user %v, error: %s",
+			receiverId, err.Error())
 		return err
 	}
 
@@ -227,4 +266,15 @@ func (s UserBalanceService) subBalance(userId uuid.UUID, changeAmount float64) e
 	}
 
 	return nil
+}
+
+func (s UserBalanceService) logBalanceInfo(userId uuid.UUID, amount float64, commentary string) error {
+	_, err := s.transactionLogRepo.Create(model.TransactionLog{
+		UserId:     userId,
+		Date:       time.Now(),
+		Amount:     math.Abs(amount),
+		Commentary: commentary,
+	})
+
+	return err
 }

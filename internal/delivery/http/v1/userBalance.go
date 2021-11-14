@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/Feokrat/user-balance-api/internal/schemas"
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,65 @@ func (h *Handler) initUserBalanceRoutes(api *gin.RouterGroup) {
 		userBalances.GET("/:id", h.getUserBalance)
 		userBalances.PUT("/", h.changeUserBalance)
 		userBalances.POST("/send/", h.sendMoneyFromUserToUser)
+		userBalances.GET("/transactionLogs/:id", h.getTransactionLogs)
 	}
+}
+
+func (h Handler) getTransactionLogs(ctx *gin.Context) {
+	userIdStr := ctx.Param("id")
+	userId, err := uuid.Parse(userIdStr)
+	if err != nil {
+		h.logger.Printf("could not parse user id %v, error: %s",
+			userIdStr, err.Error())
+		ctx.JSON(http.StatusBadRequest, schemas.ValidationErrorResponse{
+			Message: "wrong user id format",
+			Errors:  err.Error(),
+		})
+		return
+	}
+	pageNum := 1
+	pageSize := 1000
+
+	pageNumStr := ctx.Query("pageNum")
+	if pageNumStr != "" {
+		pageNum, err = strconv.Atoi(pageNumStr)
+		if err != nil {
+			h.logger.Printf("could not convert pageNum param to int")
+			ctx.JSON(http.StatusBadRequest, schemas.ValidationErrorResponse{
+				Message: "could not convert pageNum param to int",
+				Errors:  err.Error(),
+			})
+			return
+		}
+	}
+	pageSizeStr := ctx.Query("pageSize")
+	if pageSizeStr != "" {
+		pageSize, err = strconv.Atoi(pageSizeStr)
+		if err != nil {
+			h.logger.Printf("could not convert pageSize param to int")
+			ctx.JSON(http.StatusBadRequest, schemas.ValidationErrorResponse{
+				Message: "could not convert pageSize param to int",
+				Errors:  err.Error(),
+			})
+			return
+		}
+	}
+	sortField := ctx.Query("sortField")
+	if sortField == "" {
+		sortField = "date"
+	}
+
+	logs, err := h.services.GetAllUserLogs(userId, sortField, pageNum-1, pageSize)
+	if err != nil {
+		h.logger.Printf("could not get all transaction logs of user %v",
+			userId)
+		ctx.JSON(http.StatusInternalServerError, schemas.ErrorResponse{
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, logs)
 }
 
 func (h Handler) getUserBalance(ctx *gin.Context) {

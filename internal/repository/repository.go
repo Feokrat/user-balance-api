@@ -16,8 +16,8 @@ type UserBalance interface {
 }
 
 type TransactionLog interface {
-	GetAllUserLogs(userId uuid.UUID, pageNum int, pageSize int) []model.TransactionLog
-	CreateUserLog(transactionLog model.TransactionLog) (int32, error)
+	GetAllByUserId(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, error)
+	Create(transactionLog model.TransactionLog) (int32, error)
 }
 
 type Repository struct {
@@ -27,7 +27,7 @@ type Repository struct {
 
 func NewRepositories(db *sqlx.DB, logger *log.Logger) *Repository {
 	return &Repository{
-		UserBalance: NewUserBalancePostgres(db, logger),
+		UserBalance:    NewUserBalancePostgres(db, logger),
 		TransactionLog: NewTransactionLogPostgres(db, logger),
 	}
 }

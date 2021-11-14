@@ -3,6 +3,8 @@ package service
 import (
 	"log"
 
+	"github.com/Feokrat/user-balance-api/internal/model"
+
 	"github.com/Feokrat/user-balance-api/internal/repository"
 	"github.com/google/uuid"
 )
@@ -14,12 +16,18 @@ type UserBalance interface {
 	GetExchangeRate(fromCurrency string, toCurrency string) (float64, error)
 }
 
+type TransactionLog interface {
+	GetAllUserLogs(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, error)
+}
+
 type Services struct {
 	UserBalance
+	TransactionLog
 }
 
 func NewServices(repos *repository.Repository, logger *log.Logger) *Services {
 	return &Services{
-		UserBalance: NewUserBalanceService(repos.UserBalance, logger),
+		UserBalance:    NewUserBalanceService(repos.UserBalance, repos.TransactionLog, logger),
+		TransactionLog: NewTransactionLogService(repos.TransactionLog, logger),
 	}
 }

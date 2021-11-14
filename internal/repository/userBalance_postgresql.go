@@ -23,16 +23,16 @@ func NewUserBalancePostgres(db *sqlx.DB, logger *log.Logger) *UserBalancePostgre
 func (r UserBalancePostgres) GetByUserId(userId uuid.UUID) (model.UserBalance, error) {
 	query := "SELECT ub.user_id, ub.balance FROM user_balance AS ub WHERE ub.user_id = $1"
 
-	var UserBalance model.UserBalance
+	var userBalance model.UserBalance
 
-	err := r.db.Get(&UserBalance, query, userId)
+	err := r.db.Get(&userBalance, query, userId)
 	if err != nil {
 		r.logger.Printf("error in db while trying to get user balance of user %v, error: %s",
 			userId, userId)
 		return model.UserBalance{}, err
 	}
 
-	return UserBalance, nil
+	return userBalance, nil
 }
 
 func (r UserBalancePostgres) UpdateByUserId(userId uuid.UUID, changeAmount float64) error {
