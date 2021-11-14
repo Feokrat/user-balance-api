@@ -15,12 +15,19 @@ type UserBalance interface {
 	Create(userBalance model.UserBalance) error
 }
 
+type TransactionLog interface {
+	GetAllUserLogs(userId uuid.UUID, pageNum int, pageSize int) []model.TransactionLog
+	CreateUserLog(transactionLog model.TransactionLog) (int32, error)
+}
+
 type Repository struct {
 	UserBalance
+	TransactionLog
 }
 
 func NewRepositories(db *sqlx.DB, logger *log.Logger) *Repository {
 	return &Repository{
 		UserBalance: NewUserBalancePostgres(db, logger),
+		TransactionLog: NewTransactionLogPostgres(db, logger),
 	}
 }
