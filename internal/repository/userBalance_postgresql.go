@@ -26,6 +26,7 @@ func (r UserBalancePostgres) GetByUserId(userId uuid.UUID) (model.UserBalance, e
 	var userBalance model.UserBalance
 
 	err := r.db.Get(&userBalance, query, userId)
+
 	if err != nil {
 		r.logger.Printf("error in db while trying to get user balance of user %v, error: %s",
 			userId, userId)

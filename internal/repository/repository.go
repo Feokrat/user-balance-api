@@ -16,7 +16,8 @@ type UserBalance interface {
 }
 
 type TransactionLog interface {
-	GetAllByUserId(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, int, error)
+	GetAllByUserId(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, error)
+	CountByUserId(userId uuid.UUID) (int, error)
 	Create(transactionLog model.TransactionLog) (int32, error)
 }
 

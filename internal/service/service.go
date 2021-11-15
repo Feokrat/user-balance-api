@@ -17,7 +17,8 @@ type UserBalance interface {
 }
 
 type TransactionLog interface {
-	GetAllUserLogs(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, int, error)
+	GetAllUserLogs(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, error)
+	CountUserLogs(userId uuid.UUID) (int, error)
 }
 
 type Services struct {

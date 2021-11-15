@@ -21,7 +21,7 @@ func NewTransactionLogPostgres(db *sqlx.DB, logger *log.Logger) *TransactionLogP
 }
 
 func (t TransactionLogPostgres) GetAllByUserId(userId uuid.UUID, sortField string, pageNum int, pageSize int) (
-	[]model.TransactionLog, int, error) {
+	[]model.TransactionLog, error) {
 	query := fmt.Sprintf("SELECT tl.id, tl.user_id, tl.date, tl.amount, tl.commentary FROM transaction_log AS tl "+
 		"WHERE tl.user_id = $1 ORDER BY %s LIMIT $2 OFFSET $3", sortField)
 
@@ -31,15 +31,23 @@ func (t TransactionLogPostgres) GetAllByUserId(userId uuid.UUID, sortField strin
 	if err != nil {
 		t.logger.Printf("error in db while trying to get transaction log of user %v, error: %s",
 			userId, err)
-		return nil, 0, err
+		return nil, err
 	}
+
+	return transactionLogs, nil
+}
+
+func (t TransactionLogPostgres) CountByUserId(userId uuid.UUID) (int, error) {
 	var count int
 	row := t.db.QueryRow("SELECT COUNT(*) FROM transaction_log AS tl WHERE tl.user_id=$1", userId)
-	err = row.Scan(&count)
+	err := row.Scan(&count)
 	if err != nil {
-		log.Fatal(err)
+		t.logger.Printf("could not perform count for transaction logs of user %v in db, error: %s",
+			userId, err.Error())
+		return 0, err
 	}
-	return transactionLogs, count, nil
+
+	return count, nil
 }
 
 func (t TransactionLogPostgres) Create(transactionLog model.TransactionLog) (int32, error) {
