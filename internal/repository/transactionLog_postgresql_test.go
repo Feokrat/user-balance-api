@@ -79,7 +79,7 @@ func TestTransactionLogPostgres_Create(t *testing.T) {
 func TestTransactionLogPostgres_GetAllByUserId(t *testing.T) {
 	logger := log.New(os.Stdout, "logger: ", log.Lshortfile)
 
-	db, mock, err := sqlxmock.Newx()
+	db, mock, err := sqlxmock.Newx(sqlxmock.QueryMatcherOption(sqlxmock.QueryMatcherEqual))
 	if err != nil {
 		t.Fatalf("error while trying to mock db, error: %s", err.Error())
 	}
@@ -89,6 +89,8 @@ func TestTransactionLogPostgres_GetAllByUserId(t *testing.T) {
 
 	type args struct {
 		userId uuid.UUID
+		pageNum int
+		pageSize int
 	}
 
 	type mockBehavior func(args args)
@@ -105,14 +107,18 @@ func TestTransactionLogPostgres_GetAllByUserId(t *testing.T) {
 	}{
 		{
 			name:  "Ok",
-			input: args{userId: userId},
+			input: args{
+				userId:   userId,
+				pageNum:  1,
+				pageSize: 100,
+			},
 			mock: func(args args) {
 				rows := sqlxmock.NewRows([]string{"id", "user_id", "date", "amount", "commentary"}).
 					AddRow(1, userId, time, 100, "TEST1").
 					AddRow(2, userId, time, 200, "TEST2")
 
-				mock.ExpectQuery("SELECT (.+) FROM transaction_log WHERE (.+) ").
-					WithArgs(args.userId).WillReturnRows(rows)
+				mock.ExpectQuery("SELECT tl.id, tl.user_id, tl.date, tl.amount, tl.commentary FROM transaction_log AS tl WHERE tl.user_id = $1 ORDER BY date LIMIT $2 OFFSET $3").
+					WithArgs(args.userId, args.pageSize, args.pageNum*args.pageSize).WillReturnRows(rows)
 			},
 			expectedOut: []model.TransactionLog{
 				{
@@ -132,13 +138,29 @@ func TestTransactionLogPostgres_GetAllByUserId(t *testing.T) {
 			},
 			expectedErr: false,
 		},
+		{
+			name:  "Empty List",
+			input: args{
+				userId:   userId,
+				pageNum:  1,
+				pageSize: 100,
+			},
+			mock: func(args args) {
+				rows := sqlxmock.NewRows([]string{"id", "user_id", "date", "amount", "commentary"})
+
+				mock.ExpectQuery("SELECT tl.id, tl.user_id, tl.date, tl.amount, tl.commentary FROM transaction_log AS tl WHERE tl.user_id = $1 ORDER BY date LIMIT $2 OFFSET $3").
+					WithArgs(args.userId, args.pageSize, args.pageNum*args.pageSize).WillReturnRows(rows)
+			},
+			expectedOut: nil,
+			expectedErr: false,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			test.mock(test.input)
 
-			got, err := r.GetAllByUserId(test.input.userId, "A", 1, 2)
+			got, err := r.GetAllByUserId(test.input.userId, "date", 1, 100)
 			if test.expectedErr {
 				assert.Error(t, err)
 			} else {
