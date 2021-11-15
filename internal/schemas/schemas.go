@@ -1,6 +1,9 @@
 package schemas
 
-import "github.com/google/uuid"
+import (
+	"github.com/Feokrat/user-balance-api/internal/model"
+	"github.com/google/uuid"
+)
 
 type ErrorResponse struct {
 	Message string `json:"message"`
@@ -52,4 +55,10 @@ type TransactionRequest struct {
 	SenderId   uuid.UUID `json:"senderId"`
 	ReceiverId uuid.UUID `json:"receiverId"`
 	Amount     float64   `json:"amount"`
+}
+
+type TransactionLogResponse struct {
+	Items []model.TransactionLog `json:"items"`
+	Len int `json:"len"`
+	All int `json:"all"`
 }

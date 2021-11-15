@@ -65,7 +65,7 @@ func (h Handler) getTransactionLogs(ctx *gin.Context) {
 		sortField = "date"
 	}
 
-	logs, err := h.services.GetAllUserLogs(userId, sortField, pageNum-1, pageSize)
+	logs, countAll, err := h.services.GetAllUserLogs(userId, sortField, pageNum-1, pageSize)
 	if err != nil {
 		h.logger.Printf("could not get all transaction logs of user %v",
 			userId)
@@ -75,7 +75,11 @@ func (h Handler) getTransactionLogs(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, logs)
+	ctx.JSON(http.StatusOK, schemas.TransactionLogResponse{
+		Items:   logs,
+		Len:     len(logs),
+		All:     countAll,
+	})
 }
 
 func (h Handler) getUserBalance(ctx *gin.Context) {

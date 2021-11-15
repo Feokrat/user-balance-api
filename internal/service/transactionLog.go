@@ -17,12 +17,13 @@ func NewTransactionLogService(transactionLogRepo repository.TransactionLog, logg
 	return &TransactionLogService{transactionLogRepo: transactionLogRepo, logger: logger}
 }
 
-func (t TransactionLogService) GetAllUserLogs(userId uuid.UUID, sortField string, pageNum int, pageSize int) ([]model.TransactionLog, error) {
-	transactionLogs, err := t.transactionLogRepo.GetAllByUserId(userId, sortField, pageNum, pageSize)
+func (t TransactionLogService) GetAllUserLogs(userId uuid.UUID, sortField string, pageNum int,
+	pageSize int) ([]model.TransactionLog, int, error) {
+	transactionLogs, countAll, err := t.transactionLogRepo.GetAllByUserId(userId, sortField, pageNum, pageSize)
 	if err != nil {
 		t.logger.Printf("could not get all transaction logs of user %v", userId)
-		return nil, err
+		return nil, 0, err
 	}
 
-	return transactionLogs, nil
+	return transactionLogs, countAll, nil
 }
